@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        *{
+            margin:0;
+            padding:0;
+        }
+        #container{
+               width: 600px;
+               height: 600px;
+               border:1px solid #000;
+            /*//让会计元素垂直水平居中*/
+               position:absolute;
+               left: 0;
+               right:0;
+               top:0;
+               bottom: 0;
+               margin:auto;
+               font-size: 0;
+           }
+        span{
+            display:inline-block;
+            width:50px;
+            height: 50px;
+            border:1px solid black;
+            box-sizing: border-box;
+        }
+        span.snake{
+            background-color: blue;
+            position: absolute;
+            top:0;
+        }
+        span.food{
+            position:absolute;
+            background-color: orange;
+        }
+    </style>
+    <script>
+        /**
+         * 函数的地址：
+         * 写这个目的，一定是一点点分析出来的
+         *
+         */
+        //申明全局的变量，这样就好以后扩展
+//                =====表示方向==============
+//                枚举的方式(见名知意)，可以让那你的代码更具可读性
+                var DIR={
+                    dir_left:1,
+                    dir_right:2,
+                    dir_down:3,
+                    dir_top:4
+                };//这的是一种很好的编程习惯，这个感念所有的语言都是适用的，对象类型可以被一一的列举出来。
+        var square={
+            width:50,
+            height:50
+        };
+        var container=document.getElementById("container");
+        var Map=null;
+        Map={
+            show:function(){
+                var div=document.getElementById("container");
+                var width=div.offsetWidth-2;
+                var height=div.offsetWidth-2;
+                var hMax=width/square.width;
+                var vMax=height/square.height;
+                //用for循环创建span并加到container中
+                for(var i=1;i<=hMax*vMax;i++){
+                    var newSpan=document.createElement('span');
+                    div.appendChild(newSpan);
+                }
+            }
+        };
+//        ===========蛇============
+        var Snake={
+            speed:1000,
+            hander:null,
+            bodys:[],//到时候通过这个找到蛇
+            addBody:function(left,top)
+            {
+                var newSpan=document.createElement("span");
+                newSpan.className="snake";
+                newSpan.style.top=top+'px';
+                newSpan.style.left=left+'px';
+                var container=document.getElementById("container");
+                container.appendChild(newSpan);
+                this.bodys.push(newSpan);
+            },
+            moveOrNot:function(left,top){
+                var container=document.getElementById("container");
+                if(!this.isValidPosition(left,top))
+                {
+                    alert("吃到了自己！");
+                    return false;
+                }else if(left<0||left>container.offsetWidth-2-square.width|| top<0||top>container.offsetHeight-2-square.height)
+                {
+                    alert("你撞墙啦！");
+                    return false;
+                }
+                return true;
+             },
+
+            isValidPosition:function(left,top){
+                for(var i=0;i<this.bodys.length;i++){
+                    if(this.bodys[i].offsetLeft==left&&this.bodys[i].offsetTop==top)
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            },
+            DIR:DIR.dir_right,//让代码在说活，这就是枚举的好处
+            init:function(length){
+                for(var i=0;i<length;i++){
+                    var newSpan=document.createElement('span');
+//                    newSpan.setAttribute("class","snake");
+                    var container=document.getElementById("container");
+                    newSpan.style.left=i*square.width+'px';
+                    newSpan.className="snake";
+                    container.appendChild(newSpan);
+                    //推进蛇的身体
+                    this.bodys.unshift(newSpan);//向数组的头部插入
+                }
+                document.onkeydown=function(event)//只可以通过window的事件，这里面的this指向的是window
+                {
+                    var event=event|| window.event;
+                    switch (event.keyCode)
+                    {
+                        case 37:
+                            Snake.DIR=DIR.dir_left;
+                            break;
+                        case 38:
+                            Snake.DIR=DIR.dir_top;
+                            break;
+                        case 39:
+                            Snake.DIR=DIR.dir_right;
+                            break;
+                        case 40:
+                            Snake.DIR=DIR.dir_down;
+                            break;
+                        default :
+                            break;
+                    }
+                }
+            },
+            move:function(){
+                //保存蛇尾的偏移量，这就是新创建的span的坐标
+                var rearLeft=this.bodys[this.bodys.length-1].offsetLeft;
+                var rearTop=this.bodys[this.bodys.length-1].offsetTop;
+                //让除了蛇头以外的元素去移动
+                //后面的占据前面的位置
+                //线移动蛇尾巴，后移动蛇的身体
+                for(var i=this.bodys.length-1;i>=1;i--){
+                    this.bodys[i].style.top=this.bodys[i-1].offsetTop+'px';
+                    this.bodys[i].style.left=this.bodys[i-1].offsetLeft+'px';
+                }
+                var newLeft=this.bodys[0].offsetLeft,newTop=this.bodys[0].offsetTop;
+                //===========让蛇头移动起来===============
+
+                switch (this.DIR){
+                    case DIR.dir_down:
+                        newTop+=square.height;
+                        break;
+                    case DIR.dir_left:
+                        newLeft-=square.width;
+                        break;
+                    case DIR.dir_right:
+                        newLeft+=square.width;
+                        break;
+                    case DIR.dir_top:
+                        newTop-=square.height;
+                        break;
+                }
+                if(!Snake.moveOrNot(newLeft,newTop))
+                {
+                    alert("Game Over!");
+                    clearInterval(Snake.hander);
+                    return ;
+                }
+                this.bodys[0].style.left=newLeft+"px";
+                this.bodys[0].style.top=newTop+"px";
+                //判断蛇头新的位置是否有效
+
+
+//                ========判断能不能吃到食物=============
+//                不管吃到还是没有吃到，蛇都要移动
+                if(newLeft==Food.food.offsetLeft&&newTop==Food.food.offsetTop)
+                {
+                   Snake.addBody(rearLeft,rearTop);
+                    //食物要重置
+                    Food.reset();//把代码放在该放的地方，每一个东西只做自己该做的事情
+                    clearInterval(Snake.hander);//是每吃到一个食物速度就增加
+                    Snake.speed=Snake.speed-100>100?Snake.speed-100:Snake.speed;
+                    Snake.hander=setInterval(function(){
+                        Snake.move();
+                    },Snake.speed);
+                }
+            }
+        };
+        //        =============创建食物==========
+        var Food={
+            food:null,
+            reset:function(){
+                document.getElementById("container").removeChild(this.food);
+                this.food=null;
+                this.show();
+            },
+            show:function(){
+                var container=document.getElementById("container");
+                this.food=document.createElement("span");
+                this.food.className="food";
+                var width=container.offsetWidth-2;
+                var height=container.offsetHeight-2;
+                //获取
+                var vMax=width/square.width;
+                var hMax=width/square.height;
+                do{
+                    var top=Math.floor(Math.random()*vMax)*square.height;
+                    var left=Math.floor(Math.random()*hMax)*square.width;
+                    this.food.style.left=left+'px';
+                    this.food.style.top=top+'px';
+                    container.appendChild(this.food);
+                }while(!Snake.isValidPosition(left,top));//先放一个在判断
+                //判断食物不能和设定身体重合
+            }
+        };
+//        ============文档加载===========
+        window.onload=function(){
+            Map.show();
+            Snake.init(5);
+            Food.show();
+            //这里返回的是匿名函数的地址的
+            Snake.hander=setInterval(function(){
+                Snake.move();//这个this要指向snake,move一定是通过snake来调用的，现在window调用的是匿名函数
+            },Snake.speed);
+        }
+
+    </script>
+</head>
+<body>
+
+<div id="container">
+
+</div>
+
+</body>
+</html>
